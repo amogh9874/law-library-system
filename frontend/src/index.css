@@ -1,0 +1,124 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 20% 97%;
+    --foreground: 220 25% 12%;
+
+    --primary: 215 45% 20%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 215 45% 20%;
+
+    --accent: 38 45% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 40%;
+
+    --destructive: 0 65% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 145 55% 32%;
+    --success-foreground: 0 0% 98%;
+
+    --warning: 38 80% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 215 45% 30%;
+
+    --sidebar: 215 45% 15%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-accent: 38 45% 43%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 17% 9%;
+    --foreground: 210 20% 92%;
+
+    --primary: 210 60% 68%;
+    --primary-foreground: 220 25% 10%;
+
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 92%;
+
+    --accent: 38 55% 55%;
+    --accent-foreground: 220 25% 10%;
+
+    --muted: 215 18% 16%;
+    --muted-foreground: 215 12% 65%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success: 145 50% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 75% 55%;
+    --warning-foreground: 220 25% 10%;
+
+    --card: 220 18% 12%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 18% 12%;
+    --popover-foreground: 210 20% 92%;
+
+    --border: 215 15% 22%;
+    --input: 215 15% 22%;
+    --ring: 210 55% 60%;
+
+    --sidebar: 220 22% 7%;
+    --sidebar-foreground: 210 20% 88%;
+    --sidebar-accent: 38 55% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Visible keyboard focus everywhere, per accessibility floor */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The location "wayfinding tag" - the app's signature element, used
+   anywhere a book's physical location is shown. */
+.location-tag {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-mono text-accent-foreground;
+  color: hsl(var(--accent));
+}
+
+.location-tag .separator {
+  @apply text-accent/50;
+}

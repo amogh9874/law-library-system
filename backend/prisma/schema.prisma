@@ -1,0 +1,324 @@
+// ============================================================
+// Law Library Management System — Prisma Schema
+// PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------
+
+enum Role {
+  WEBSITE_OWNER
+  LIBRARY_ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BookType {
+  LAW_BOOK
+  BARE_ACT
+  CASE_LAW
+  JOURNAL
+  MANUAL
+  COMMENTARY
+  RESEARCH_PAPER
+  REFERENCE_BOOK
+}
+
+enum BookStatus {
+  AVAILABLE
+  ISSUED
+  LOST
+  DAMAGED
+}
+
+enum BookCondition {
+  NEW
+  GOOD
+  WORN
+  DAMAGED
+}
+
+enum BorrowStatus {
+  ISSUED
+  RETURNED
+  OVERDUE
+  LOST
+}
+
+// ------------------------------------------------------------
+// USERS & AUTH
+// ------------------------------------------------------------
+
+// Login-capable accounts. Website Owners are standalone; Library Admins
+// are also linked to an Employee record (since admins are staff too).
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  passwordHash  String
+  role          Role
+  accountStatus AccountStatus @default(ACTIVE)
+  employee      Employee?     @relation(fields: [employeeId], references: [id])
+  employeeId    String?       @unique
+  lastLoginAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  activityLogs   ActivityLog[]
+  booksAdded     Book[]        @relation("BookAddedBy")
+  borrowsIssued  BorrowRecord[] @relation("IssuedBy")
+  borrowsReturned BorrowRecord[] @relation("ReturnedBy")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ------------------------------------------------------------
+// EMPLOYEES
+// ------------------------------------------------------------
+
+model Employee {
+  id             String        @id @default(uuid())
+  employeeCode   String        @unique // human-readable Employee ID, e.g. EMP-0001
+  name           String
+  designation    String
+  department     String
+  officeLocation String
+  email          String        @unique
+  phoneNumber    String
+  accountStatus  AccountStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           User?
+  borrowRecords  BorrowRecord[]
+
+  @@index([employeeCode])
+  @@index([name])
+  @@index([department])
+  @@map("employees")
+}
+
+// ------------------------------------------------------------
+// LIBRARY PHYSICAL STRUCTURE
+// ------------------------------------------------------------
+
+// Single floor for now, modeled as a table so it can be extended later
+// without a schema change if the firm ever adds a second floor.
+model Floor {
+  id        String   @id @default(uuid())
+  name      String   @unique // e.g. "Floor 1"
+  createdAt DateTime @default(now())
+
+  rooms Room[]
+
+  @@map("floors")
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  name      String // e.g. "Room B"
+  floor     Floor    @relation(fields: [floorId], references: [id])
+  floorId   String
+  createdAt DateTime @default(now())
+
+  shelves Shelf[]
+
+  @@unique([floorId, name])
+  @@index([name])
+  @@map("rooms")
+}
+
+model Shelf {
+  id        String   @id @default(uuid())
+  name      String // e.g. "Shelf S4"
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
+  createdAt DateTime @default(now())
+
+  bookLocations BookLocation[]
+
+  @@unique([roomId, name])
+  @@index([name])
+  @@map("shelves")
+}
+
+// Exact physical location of a single book. Split from Book so that a
+// book's location history could be tracked later (e.g. reshelving) while
+// keeping the current location as a 1:1 pointer from Book.
+model BookLocation {
+  id       String @id @default(uuid())
+  shelf    Shelf  @relation(fields: [shelfId], references: [id])
+  shelfId  String
+  row      String // e.g. "Row 3"
+  position String // e.g. "Position 18"
+
+  book Book?
+
+  @@index([shelfId])
+  @@map("book_locations")
+}
+
+// ------------------------------------------------------------
+// CATALOG: AUTHORS / PUBLISHERS / CATEGORIES
+// ------------------------------------------------------------
+
+model Author {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  books Book[]
+
+  @@index([name])
+  @@map("authors")
+}
+
+model Publisher {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  books Book[]
+
+  @@index([name])
+  @@map("publishers")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  books Book[]
+
+  @@index([name])
+  @@map("categories")
+}
+
+// ------------------------------------------------------------
+// BOOKS
+// ------------------------------------------------------------
+
+model Book {
+  id                String        @id @default(uuid())
+  accessionNumber   String        @unique
+  isbn              String?
+  barcodeNumber     String?       @unique
+  title             String
+  subtitle          String?
+  author            Author        @relation(fields: [authorId], references: [id])
+  authorId          String
+  publisher         Publisher     @relation(fields: [publisherId], references: [id])
+  publisherId       String
+  publicationYear   Int?
+  edition           String?
+  volume            String?
+  category          Category      @relation(fields: [categoryId], references: [id])
+  categoryId        String
+  subject           String?
+  language           String       @default("English")
+  description       String?
+  keywords          String? // comma-separated / free text, indexed for search
+  bookType          BookType
+  numberOfPages     Int?
+  coverImageUrl     String?
+
+  location          BookLocation? @relation(fields: [locationId], references: [id])
+  locationId        String?       @unique
+
+  status            BookStatus    @default(AVAILABLE)
+  condition         BookCondition @default(NEW)
+
+  isDeleted         Boolean       @default(false)
+  deletedAt         DateTime?
+
+  addedBy           User?         @relation("BookAddedBy", fields: [addedById], references: [id])
+  addedById         String?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  borrowRecords     BorrowRecord[]
+
+  @@index([title])
+  @@index([isbn])
+  @@index([accessionNumber])
+  @@index([barcodeNumber])
+  @@index([authorId])
+  @@index([publisherId])
+  @@index([categoryId])
+  @@index([bookType])
+  @@index([status])
+  @@index([keywords])
+  @@index([isDeleted])
+  @@map("books")
+}
+
+// ------------------------------------------------------------
+// BORROW MANAGEMENT
+// ------------------------------------------------------------
+
+model BorrowRecord {
+  id         String       @id @default(uuid())
+  book       Book         @relation(fields: [bookId], references: [id])
+  bookId     String
+  employee   Employee     @relation(fields: [employeeId], references: [id])
+  employeeId String
+
+  issueDate  DateTime     @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+
+  status     BorrowStatus @default(ISSUED)
+
+  issuedBy    User?  @relation("IssuedBy", fields: [issuedById], references: [id])
+  issuedById  String?
+  returnedBy  User?  @relation("ReturnedBy", fields: [returnedById], references: [id])
+  returnedById String?
+
+  remarks    String?
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([bookId])
+  @@index([employeeId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("borrow_records")
+}
+
+// ------------------------------------------------------------
+// ACTIVITY LOGS
+// ------------------------------------------------------------
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  action    String // e.g. "BOOK_ADDED", "USER_LOGIN"
+  module    String // e.g. "Books", "Employees", "Auth"
+  details   String? // free-text / JSON-stringified extra context
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
