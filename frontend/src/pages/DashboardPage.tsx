@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import { Book, BorrowRecord, ActivityLog, PaginatedResponse } from "@/types";
 import { BookStatusBadge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "@/lib/date";
+import { useAuth } from "@/context/AuthContext";
 
 interface StatCardProps {
   label: string;
@@ -35,6 +36,8 @@ async function fetchBookCount(status?: string): Promise<number> {
 }
 
 export function DashboardPage() {
+  const { isOwner } = useAuth();
+
   const totalBooks = useQuery({ queryKey: ["stats", "books", "all"], queryFn: () => fetchBookCount() });
   const availableBooks = useQuery({
     queryKey: ["stats", "books", "AVAILABLE"],
@@ -88,6 +91,7 @@ export function DashboardPage() {
       });
       return data.data;
     },
+    enabled: isOwner,
   });
 
   return (
@@ -116,7 +120,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-6 ${isOwner ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         <div className="rounded-lg border border-border bg-card lg:col-span-1">
           <div className="border-b border-border px-5 py-3">
             <h2 className="text-sm font-semibold text-card-foreground">Recently Added Books</h2>
@@ -160,27 +164,29 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-card lg:col-span-1">
-          <div className="border-b border-border px-5 py-3">
-            <h2 className="text-sm font-semibold text-card-foreground">Recent Activity</h2>
+        {isOwner && (
+          <div className="rounded-lg border border-border bg-card lg:col-span-1">
+            <div className="border-b border-border px-5 py-3">
+              <h2 className="text-sm font-semibold text-card-foreground">Recent Activity</h2>
+            </div>
+            <div className="divide-y divide-border">
+              {recentActivity.isLoading && <p className="px-5 py-4 text-sm text-muted-foreground">Loading...</p>}
+              {recentActivity.data?.length === 0 && (
+                <p className="px-5 py-4 text-sm text-muted-foreground">No activity recorded yet.</p>
+              )}
+              {recentActivity.data?.map((log) => (
+                <div key={log.id} className="px-5 py-3">
+                  <p className="text-sm text-card-foreground">
+                    {log.action.replace(/_/g, " ").toLowerCase()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {log.user?.email ?? "System"} · {formatDistanceToNow(log.createdAt)}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="divide-y divide-border">
-            {recentActivity.isLoading && <p className="px-5 py-4 text-sm text-muted-foreground">Loading...</p>}
-            {recentActivity.data?.length === 0 && (
-              <p className="px-5 py-4 text-sm text-muted-foreground">No activity recorded yet.</p>
-            )}
-            {recentActivity.data?.map((log) => (
-              <div key={log.id} className="px-5 py-3">
-                <p className="text-sm text-card-foreground">
-                  {log.action.replace(/_/g, " ").toLowerCase()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {log.user?.email ?? "System"} · {formatDistanceToNow(log.createdAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );

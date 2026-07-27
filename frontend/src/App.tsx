@@ -81,7 +81,14 @@ export default function App() {
                   />
                   <Route path="employees/:id" element={<EmployeeDetailsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
-                  <Route path="activity-logs" element={<ActivityLogsPage />} />
+                  <Route
+                    path="activity-logs"
+                    element={
+                      <OwnerOnlyRoute>
+                        <ActivityLogsPage />
+                      </OwnerOnlyRoute>
+                    }
+                  />
                   <Route path="profile" element={<ProfilePage />} />
                 </Route>
                 <Route path="*" element={<ComingSoonPage title="Page Not Found" />} />

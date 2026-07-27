@@ -1,11 +1,12 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/prisma";
-import { authenticate } from "../middleware/auth";
+import { authenticate, authorize } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 import { parsePagination, buildPaginatedResponse } from "../utils/query";
 
 const router = Router();
 router.use(authenticate);
+router.use(authorize("WEBSITE_OWNER"));
 
 router.get(
   "/",

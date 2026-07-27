@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Shelves", to: "/shelves", icon: LibraryBig },
   { label: "Employees", to: "/employees", icon: Users2 },
   { label: "Reports", to: "/reports", icon: FileBarChart },
-  { label: "Activity Logs", to: "/activity-logs", icon: ScrollText },
+  { label: "Activity Logs", to: "/activity-logs", icon: ScrollText, ownerOnly: true },
 ];
 
 export function Sidebar() {
