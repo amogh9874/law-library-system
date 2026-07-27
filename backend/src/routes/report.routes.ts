@@ -44,7 +44,14 @@ router.get(
     });
 
     if (format === "json") {
-      res.json({ type, count: data.length, data });
+      const rows = flat.rows.map((row) => {
+        const obj: Record<string, string> = {};
+        flat.headers.forEach((header, i) => {
+          obj[header] = row[i];
+        });
+        return obj;
+      });
+      res.json({ type, count: data.length, data: rows });
       return;
     }
 
